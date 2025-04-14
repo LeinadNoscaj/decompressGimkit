@@ -6,6 +6,7 @@ async function decompressAndOutput() {
     const filenameBase = urlParams.get('filename');
 
     if (!filenameBase) {
+        document.contentType = 'text/plain';
         document.body.textContent = JSON.stringify({ error: 'No filename parameter provided.' });
         return;
     }
@@ -16,6 +17,7 @@ async function decompressAndOutput() {
     try {
         const response = await fetch(CORS_PROXY_URL + jsonUrl);
         if (!response.ok) {
+            document.contentType = 'text/plain';
             document.body.textContent = JSON.stringify({ error: `HTTP error! status: ${response.status}` });
             return;
         }
@@ -23,9 +25,11 @@ async function decompressAndOutput() {
         const decompressedObject = compressJSON.decompress(fetchedData);
         const decompressedJsonString = JSON.stringify(decompressedObject);
 
+        document.contentType = 'text/plain';
         document.body.textContent = decompressedJsonString;
 
     } catch (error) {
+        document.contentType = 'text/plain';
         document.body.textContent = JSON.stringify({ error: error.message });
     }
 }
