@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Online JSON Decompressor (via Link)</title>
+    <title>Gimkit JSON Decompressor (Filename)</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Online JSON Decompressor (Provide JSON Link)</h1>
+    <h1>Gimkit JSON Decompressor (Provide Filename)</h1>
 
-    <label for="jsonLink">JSON File URL:</label><br>
-    <input type="url" id="jsonLink" size="80" placeholder="Enter the URL of the JSON file">
-    <button onclick="decompressFromLink()">Decompress from Link</button><br><br>
+    <label for="filename">Gimkit Filename (without .json):</label><br>
+    <input type="text" id="filename" size="40" placeholder="Enter the filename (e.g., snowman)">
+    <button onclick="decompressGimkitFile()">Decompress Gimkit File</button><br><br>
 
     <label for="decompressedOutput">Decompressed JSON:</label><br>
     <textarea id="decompressedOutput" rows="15" cols="80" readonly></textarea>
@@ -20,29 +20,29 @@
 
     <script src="https://cdn.jsdelivr.net/npm/compress-json@latest/dist/compress-json.min.js"></script>
     <script>
-        async function decompressFromLink() {
-            const jsonLink = document.getElementById('jsonLink').value.trim();
+        async function decompressGimkitFile() {
+            const filenameBase = document.getElementById('filename').value.trim();
             const decompressedOutput = document.getElementById('decompressedOutput');
             const errorMessage = document.getElementById('errorMessage');
-            const corsProxy = 'https://cors-anywhere.herokuapp.com/'; // Add the CORS proxy URL
+            const corsProxy = 'https://cors-anywhere.herokuapp.com/';
+            const baseUrl = 'https://www.gimkit.com/assets/map/characters/spine/';
+            const filenameWithExtension = filenameBase + '.json';
+            const jsonUrl = baseUrl + filenameWithExtension;
 
-            if (!jsonLink) {
-                errorMessage.textContent = 'Please enter a JSON file URL.';
+            if (!filenameBase) {
+                errorMessage.textContent = 'Please enter the Gimkit filename (without .json).';
                 decompressedOutput.value = '';
                 return;
             }
 
             try {
-                const response = await fetch(corsProxy + jsonLink); // Prepend the proxy URL
+                const response = await fetch(corsProxy + jsonUrl);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const originalJsonData = await response.json();
 
-                // Compress the fetched JSON data
                 const compressedData = compress_json.compress(originalJsonData);
-
-                // Decompress the newly compressed data
                 const decompressedObject = compress_json.decompress(compressedData);
 
                 decompressedOutput.value = JSON.stringify(decompressedObject, null, 2);
@@ -54,16 +54,14 @@
             }
         }
 
-        // Attempt to decompress from URL parameter on load and URI-encode the link
         document.addEventListener('DOMContentLoaded', function() {
             const urlParams = new URLSearchParams(window.location.search);
-            const jsonLinkFromURL = urlParams.get('jsonLink');
-            const jsonLinkInput = document.getElementById('jsonLink');
+            const filenameFromURL = urlParams.get('filename');
+            const filenameInput = document.getElementById('filename');
 
-            if (jsonLinkFromURL) {
-                jsonLinkInput.value = decodeURIComponent(jsonLinkFromURL); // Decode for display in the input
-                // No need to encode here, the fetch will handle the URL as is.
-                decompressFromLink();
+            if (filenameFromURL) {
+                filenameInput.value = decodeURIComponent(filenameFromURL);
+                decompressGimkitFile();
             }
         });
     </script>
