@@ -1,0 +1,80 @@
+name: Fetch and Decompress Gimkit Assets
+
+on:
+  push: # Trigger on every push (you might want to refine this trigger)
+  workflow_dispatch: # Allows manual triggering from the GitHub Actions UI
+
+jobs:
+  fetch_decompress:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+
+      - name: Install dependencies
+        run: npm install compress-json node-fetch
+
+      - name: Fetch and decompress assets
+        env:
+          GIMKIT_BASE_URL: 'https://www.gimkit.com/assets/map/characters/spine/'
+          OUTPUT_FILE: all_decompressed_data.json
+          FILENAMES: 'snowman,your_other_asset,another_one' # Add all your filenames here, comma-separated
+        run: |
+          const fs = require('fs').promises;
+          const path = require('path');
+          const compressJSON = require('compress-json');
+          const fetch = require('node-fetch');
+
+          async function fetchAndDecompress(filename) {
+            const jsonUrl = `${process.env.GIMKIT_BASE_URL}${filename}.json`;
+            const corsProxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(jsonUrl)}`;
+
+            try {
+              const response = await fetch(corsProxyUrl);
+              if (!response.ok) {
+                console.error(`Error fetching ${filename}.json: ${response.status}`);
+                return null;
+              }
+              const compressedData = await response.json();
+              const decompressedData = compressJSON.decompress(compressedData);
+              console.log(`Fetched and decompressed ${filename}.json`);
+              return decompressedData;
+            } catch (error) {
+              console.error(`Error processing ${filename}.json:`, error);
+              return null;
+            }
+          }
+
+          async function main() {
+            const filenames = process.env.FILENAMES.split(',');
+            const allDecompressed = {};
+
+            for (const filename of filenames) {
+              const trimmedFilename = filename.trim();
+              if (trimmedFilename) {
+                const decompressed = await fetchAndDecompress(trimmedFilename);
+                if (decompressed) {
+                  allDecompressed[trimmedFilename] = decompressed;
+                }
+              }
+            }
+
+            const allDecompressedJsonString = JSON.stringify(allDecompressed, null, 2);
+            await fs.writeFile(process.env.OUTPUT_FILE, allDecompressedJsonString, 'utf8');
+            console.log(`All decompressed data saved to ${process.env.OUTPUT_FILE}`);
+          }
+
+          main();
+
+      - name: Commit and push decompressed data
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+          git add ${{ env.OUTPUT_FILE }}
+          git commit -m "Automated: Fetch and decompress all Spine assets"
+          git push
