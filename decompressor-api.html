@@ -6,18 +6,17 @@
     <title>Gimkit JSON Decompressor API</title>
 </head>
 <body>
-    <pre id="api-output" style="display: none;"></pre>
     <script src="https://cdn.jsdelivr.net/npm/compress-json@3/bundle.min.js"></script>
     <script>
         const GIMKIT_ASSET_BASE_URL = 'https://www.gimkit.com/assets/map/characters/spine/';
         const CORS_PROXY_URL = 'https://api.allorigins.win/raw?url=';
-        const apiOutput = document.getElementById('api-output');
 
         async function decompressAndOutput() {
             const urlParams = new URLSearchParams(window.location.search);
             const filenameBase = urlParams.get('filename');
 
             if (!filenameBase) {
+                // Output JSON error directly to the body
                 document.body.textContent = JSON.stringify({ error: 'No filename parameter provided.' });
                 return;
             }
@@ -37,13 +36,14 @@
 
                 // Output the raw JSON string as the body
                 document.body.textContent = decompressedJsonString;
-                document.body.style.contentType = 'application/json'; // Might not be effective on GH Pages
+                document.body.style.contentType = 'application/json'; // Still a hope, but might not work
 
             } catch (error) {
                 document.body.textContent = JSON.stringify({ error: error.message });
             }
         }
 
+        // Immediately execute the function
         decompressAndOutput();
     </script>
 </body>
