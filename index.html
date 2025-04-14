@@ -42,8 +42,9 @@
                 }
                 const originalJsonData = await response.json();
 
-                const compressedData = compress_json.compress(originalJsonData);
-                const decompressedObject = compress_json.decompress(compressedData);
+                // Use compressJSON (uppercase J)
+                const compressedData = compressJSON.compress(originalJsonData);
+                const decompressedObject = compressJSON.decompress(compressedData);
 
                 decompressedOutput.value = JSON.stringify(decompressedObject, null, 2);
                 errorMessage.textContent = '';
@@ -53,17 +54,6 @@
                 decompressedOutput.value = '';
             }
         }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const filenameFromURL = urlParams.get('filename');
-            const filenameInput = document.getElementById('filename');
-
-            if (filenameFromURL) {
-                filenameInput.value = decodeURIComponent(filenameFromURL);
-                decompressGimkitFile();
-            }
-        });
     </script>
 </body>
 </html>
