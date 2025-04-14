@@ -28,9 +28,10 @@
                 if (!jsonResponse.ok) {
                     throw new Error(`Failed to fetch decompressed JSON from API: ${jsonResponse.status}`);
                 }
-                const spineJsonData = await jsonResponse.json(); // Expecting JSON from the API
+                const spineJsonText = await jsonResponse.text(); // Get the response as text
+                const spineJsonData = JSON.parse(spineJsonText); // Explicitly parse it as JSON
 
-                console.log("Fetched Decompressed Spine JSON Data from API:", spineJsonData); // Inspect
+                console.log("Parsed Spine JSON Data from API:", spineJsonData); // Inspect
 
                 // 2. Fetch the atlas data
                 const atlasResponse = await fetch(CORS_PROXY + GIMKIT_BASE_URL + filename + '.atlas');
