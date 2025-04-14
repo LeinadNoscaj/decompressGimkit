@@ -42,8 +42,9 @@
                 }
                 const originalJsonData = await response.json();
 
-                // Use compressJSON (uppercase J)
                 const compressedData = compressJSON.compress(originalJsonData);
+                console.log("Compressed Data:", compressedData); // ADD THIS LINE
+
                 const decompressedObject = compressJSON.decompress(compressedData);
 
                 decompressedOutput.value = JSON.stringify(decompressedObject, null, 2);
