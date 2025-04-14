@@ -3,51 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gimkit JSON Decompressor (Raw Output)</title>
+    <title>Gimkit Spine Animation Player</title>
+    <style>
+        body { margin: 0; }
+        canvas { width: 100%; height: 100%; display: block; }
+    </style>
+    <link href="https://unpkg.com/@esotericsoftware/spine-player@4.1/dist/spine-player.css" rel="stylesheet">
 </head>
 <body>
-    <pre id="raw-json-output"></pre>
-    <script src="https://cdn.jsdelivr.net/npm/compress-json@3/bundle.min.js"></script>
+    <canvas id="spine-canvas"></canvas>
+    <script src="https://unpkg.com/@esotericsoftware/spine-player@4.1/dist/iife/spine-player.js"></script>
     <script>
-        const GIMKIT_ASSET_BASE_URL = 'https://www.gimkit.com/assets/map/characters/spine/';
-        const CORS_PROXY_URL = 'https://api.allorigins.win/raw?url=';
-        const rawJsonOutput = document.getElementById('raw-json-output');
+        const canvas = document.getElementById('spine-canvas');
+        const DECOMPRESSOR_API_URL_BASE = 'https://leinadnoscaj.github.io/decompressGimkit/decompressor-api.html?filename='; // Base URL for the API
+        const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+        const GIMKIT_BASE_URL = 'https://www.gimkit.com/assets/map/characters/spine/';
 
-        async function decompressGimkitAsset(filenameBase) {
-            const filenameWithExtension = filenameBase + '.json';
-            const jsonUrl = GIMKIT_ASSET_BASE_URL + filenameWithExtension;
-
-            if (!filenameBase) {
-                rawJsonOutput.textContent = JSON.stringify({ error: 'No filename provided.' });
-                return;
-            }
+        async function loadSpineAnimation(filename) {
+            const decompressorApiUrl = DECOMPRESSOR_API_URL_BASE + filename;
 
             try {
-                const response = await fetch(CORS_PROXY_URL + jsonUrl);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                // 1. Fetch the JSON data from our dedicated API endpoint
+                const jsonResponse = await fetch(decompressorApiUrl);
+                if (!jsonResponse.ok) {
+                    throw new Error(`Failed to fetch decompressed JSON from API: ${jsonResponse.status}`);
                 }
-                const fetchedData = await response.json();
+                const spineJsonData = await jsonResponse.json(); // Expecting JSON from the API
 
-                const decompressedObject = compressJSON.decompress(fetchedData);
+                console.log("Fetched Decompressed Spine JSON Data from API:", spineJsonData); // Inspect
 
-                // Output the raw JSON string
-                rawJsonOutput.textContent = JSON.stringify(decompressedObject);
+                // 2. Fetch the atlas data
+                const atlasResponse = await fetch(CORS_PROXY + GIMKIT_BASE_URL + filename + '.atlas');
+                if (!atlasResponse.ok) {
+                    throw new Error(`Failed to fetch atlas: ${atlasResponse.status}`);
+                }
+                const atlasText = await atlasResponse.text();
+
+                // 3. Initialize Spine Player with fetched data
+                new spine.SpinePlayer(canvas, {
+                    json: spineJsonData,
+                    atlas: atlasText,
+                    animation: 'animation', // Adjust
+                    skin: 'default',       // Adjust
+                    premultipliedAlpha: true,
+                    backgroundColor: '#00000000'
+                }, GIMKIT_BASE_URL);
 
             } catch (error) {
-                rawJsonOutput.textContent = JSON.stringify({ error: error.message });
+                console.error("Error loading Spine animation:", error);
             }
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             const filenameFromURL = urlParams.get('filename');
+            const defaultFilename = 'snowman'; // Fallback filename
 
-            if (filenameFromURL) {
-                decompressGimkitAsset(decodeURIComponent(filenameFromURL));
-            } else {
-                rawJsonOutput.textContent = JSON.stringify({ error: 'No filename parameter in URL.' });
-            }
+            const filenameToLoad = filenameFromURL || defaultFilename;
+            loadSpineAnimation(decodeURIComponent(filenameToLoad));
         });
     </script>
 </body>
