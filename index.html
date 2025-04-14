@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online JSON Decompressor (via Link)</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Online JSON Decompressor (Provide JSON Link)</h1>
+
+    <label for="jsonLink">JSON File URL:</label><br>
+    <input type="url" id="jsonLink" size="80" placeholder="Enter the URL of the JSON file">
+    <button onclick="decompressFromLink()">Decompress from Link</button><br><br>
+
+    <label for="decompressedOutput">Decompressed JSON:</label><br>
+    <textarea id="decompressedOutput" rows="15" cols="80" readonly></textarea>
+
+    <p id="errorMessage" style="color: red;"></p>
+
+    <script src="https://cdn.jsdelivr.net/npm/compress-json@latest/dist/compress-json.min.js"></script>
+    <script>
+        async function decompressFromLink() {
+            const jsonLink = document.getElementById('jsonLink').value.trim();
+            const decompressedOutput = document.getElementById('decompressedOutput');
+            const errorMessage = document.getElementById('errorMessage');
+            const corsProxy = 'https://cors-anywhere.herokuapp.com/'; // Add the CORS proxy URL
+
+            if (!jsonLink) {
+                errorMessage.textContent = 'Please enter a JSON file URL.';
+                decompressedOutput.value = '';
+                return;
+            }
+
+            try {
+                const response = await fetch(corsProxy + jsonLink); // Prepend the proxy URL
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const originalJsonData = await response.json();
+
+                // Compress the fetched JSON data
+                const compressedData = compress_json.compress(originalJsonData);
+
+                // Decompress the newly compressed data
+                const decompressedObject = compress_json.decompress(compressedData);
+
+                decompressedOutput.value = JSON.stringify(decompressedObject, null, 2);
+                errorMessage.textContent = '';
+
+            } catch (error) {
+                errorMessage.textContent = 'Error fetching or decompressing JSON: ' + error.message;
+                decompressedOutput.value = '';
+            }
+        }
+
+        // Attempt to decompress from URL parameter on load and URI-encode the link
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const jsonLinkFromURL = urlParams.get('jsonLink');
+            const jsonLinkInput = document.getElementById('jsonLink');
+
+            if (jsonLinkFromURL) {
+                jsonLinkInput.value = decodeURIComponent(jsonLinkFromURL); // Decode for display in the input
+                // No need to encode here, the fetch will handle the URL as is.
+                decompressFromLink();
+            }
+        });
+    </script>
+</body>
+</html>
