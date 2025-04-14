@@ -3,31 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gimkit JSON Decompressor (Filename from URL)</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Gimkit JSON Decompressor (Raw Output)</title>
 </head>
 <body>
-    <h1>Gimkit JSON Decompressor (Filename from URL)</h1>
-
-    <label for="decompressedOutput">Decompressed JSON:</label><br>
-    <textarea id="decompressedOutput" rows="15" cols="80" readonly></textarea>
-
-    <p id="errorMessage" style="color: red;"></p>
-
+    <pre id="raw-json-output"></pre>
     <script src="https://cdn.jsdelivr.net/npm/compress-json@3/bundle.min.js"></script>
     <script>
         const GIMKIT_ASSET_BASE_URL = 'https://www.gimkit.com/assets/map/characters/spine/';
         const CORS_PROXY_URL = 'https://api.allorigins.win/raw?url=';
+        const rawJsonOutput = document.getElementById('raw-json-output');
 
         async function decompressGimkitAsset(filenameBase) {
-            const decompressedOutput = document.getElementById('decompressedOutput');
-            const errorMessage = document.getElementById('errorMessage');
             const filenameWithExtension = filenameBase + '.json';
             const jsonUrl = GIMKIT_ASSET_BASE_URL + filenameWithExtension;
 
             if (!filenameBase) {
-                errorMessage.textContent = 'Please provide a filename in the URL query.';
-                decompressedOutput.value = '';
+                rawJsonOutput.textContent = JSON.stringify({ error: 'No filename provided.' });
                 return;
             }
 
@@ -38,16 +29,13 @@
                 }
                 const fetchedData = await response.json();
 
-                console.log("Fetched Data:", fetchedData); // For debugging
-
                 const decompressedObject = compressJSON.decompress(fetchedData);
 
-                decompressedOutput.value = JSON.stringify(decompressedObject, null, 2);
-                errorMessage.textContent = '';
+                // Output the raw JSON string
+                rawJsonOutput.textContent = JSON.stringify(decompressedObject);
 
             } catch (error) {
-                errorMessage.textContent = 'Error fetching or decompressing JSON: ' + error.message;
-                decompressedOutput.value = '';
+                rawJsonOutput.textContent = JSON.stringify({ error: error.message });
             }
         }
 
@@ -57,6 +45,8 @@
 
             if (filenameFromURL) {
                 decompressGimkitAsset(decodeURIComponent(filenameFromURL));
+            } else {
+                rawJsonOutput.textContent = JSON.stringify({ error: 'No filename parameter in URL.' });
             }
         });
     </script>
