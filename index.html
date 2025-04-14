@@ -8,60 +8,73 @@
         body { margin: 0; }
         canvas { width: 100%; height: 100%; display: block; }
     </style>
-    <link href="https://unpkg.com/@esotericsoftware/spine-player@4.1/dist/spine-player.css" rel="stylesheet">
-</head>
+    <link href="https://unpkg.com/@esotericsoftware/spine-player@4.1/dist/iife/spine-player.js"></head>
 <body>
-    <canvas id="spine-canvas"></canvas>
+    <div id="spine-player"></div>
     <script src="https://unpkg.com/@esotericsoftware/spine-player@4.1/dist/iife/spine-player.js"></script>
     <script>
-        const canvas = document.getElementById('spine-canvas');
-        const DECOMPRESSOR_API_URL_BASE = 'https://leinadnoscaj.github.io/decompressGimkit/decompressor-api.js?filename='; // Base URL for the API
-        const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
-        const GIMKIT_BASE_URL = 'https://www.gimkit.com/assets/map/characters/spine/';
-
-        async function loadSpineAnimation(filename) {
-            const decompressorApiUrl = DECOMPRESSOR_API_URL_BASE + filename;
-
-            try {
-                // 1. Fetch the JSON data from our dedicated API endpoint
-                const jsonResponse = await fetch(decompressorApiUrl);
-                if (!jsonResponse.ok) {
-                    throw new Error(`Failed to fetch decompressed JSON from API: ${jsonResponse.status}`);
-                }
-                const spineJsonText = await jsonResponse.text(); // Get the response as text
-                const spineJsonData = JSON.parse(spineJsonText); // Explicitly parse it as JSON
-
-                console.log("Parsed Spine JSON Data from API:", spineJsonData); // Inspect
-
-                // 2. Fetch the atlas data
-                const atlasResponse = await fetch(CORS_PROXY + GIMKIT_BASE_URL + filename + '.atlas');
-                if (!atlasResponse.ok) {
-                    throw new Error(`Failed to fetch atlas: ${atlasResponse.status}`);
-                }
-                const atlasText = await atlasResponse.text();
-
-                // 3. Initialize Spine Player with fetched data
-                new spine.SpinePlayer(canvas, {
-                    json: spineJsonData,
-                    atlas: atlasText,
-                    animation: 'animation', // Adjust
-                    skin: 'default',       // Adjust
-                    premultipliedAlpha: true,
-                    backgroundColor: '#00000000'
-                }, GIMKIT_BASE_URL);
-
-            } catch (error) {
-                console.error("Error loading Spine animation:", error);
-            }
-        }
-
         document.addEventListener('DOMContentLoaded', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const filenameFromURL = urlParams.get('filename');
-            const defaultFilename = 'snowman'; // Fallback filename
+            const canvas = document.getElementById('spine-player');
+            const DECOMPRESSED_DATA_URL = 'https://leinadnoscaj.github.io/decompressGimkit/all_decompressed_data.json';
+            const GIMKIT_BASE_URL = 'https://www.gimkit.com/assets/map/characters/spine/';
+            const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 
-            const filenameToLoad = filenameFromURL || defaultFilename;
-            loadSpineAnimation(decodeURIComponent(filenameToLoad));
+            async function loadSpineAnimation(filename) {
+                try {
+                    const response = await fetch(DECOMPRESSED_DATA_URL);
+                    if (!response.ok) {
+                        throw new Error(`Failed to fetch decompressed data: ${response.status}`);
+                    }
+                    const allDecompressedData = await response.json();
+                    const spineJsonData = allDecompressedData[filename];
+
+                    if (!spineJsonData) {
+                        throw new Error(`Decompressed data not found for: ${filename}`);
+                    }
+
+                    const atlasResponse = await fetch(CORS_PROXY + GIMKIT_BASE_URL + filename + '.atlas');
+                    if (!atlasResponse.ok) {
+                        throw new Error(`Failed to fetch atlas: ${atlasResponse.status}`);
+                    }
+                    const atlasText = await atlasResponse.text();
+
+                    const pngResponse = await fetch(CORS_PROXY + GIMKIT_BASE_URL + filename + '.png');
+                    if (!pngResponse.ok) {
+                        console.warn(`Failed to fetch PNG for ${filename}`);
+                    }
+                    const pngBlob = await pngResponse.blob();
+                    const reader = new FileReader();
+                    const pngDataURL = await new Promise((resolve, reject) => {
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(pngBlob);
+                    });
+
+                    new spine.SpinePlayer('spine-player', {
+                        json: spineJsonData,
+                        atlas: atlasText,
+                        animation: 'animation', // Adjust
+                        skin: 'default',       // Adjust
+                        premultipliedAlpha: true,
+                        backgroundColor: '#00000000',
+                        rawDataURIs: {
+                            [`${filename}.png`]: pngDataURL // Only if you embed images
+                        }
+                    });
+
+                } catch (error) {
+                    console.error("Error loading Spine animation:", error);
+                }
+            }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                const urlParams = new URLSearchParams(window.location.search);
+                const filenameFromURL = urlParams.get('filename');
+                const defaultFilename = 'snowman';
+
+                const filenameToLoad = filenameFromURL || defaultFilename;
+                loadSpineAnimation(decodeURIComponent(filenameToLoad));
+            });
         });
     </script>
 </body>
