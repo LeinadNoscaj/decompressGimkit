@@ -3,49 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gimkit JSON Decompressor (Filename)</title>
+    <title>Gimkit JSON Decompressor (Compressed URL)</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Gimkit JSON Decompressor (Provide Filename)</h1>
+    <h1>Gimkit JSON Decompressor (Provide Compressed JSON URL)</h1>
 
-    <label for="filename">Gimkit Filename (without .json):</label><br>
-    <input type="text" id="filename" size="40" placeholder="Enter the filename (e.g., snowman)">
-    <button onclick="decompressGimkitFile()">Decompress Gimkit File</button><br><br>
+    <label for="compressedUrl">URL of Compressed Gimkit JSON:</label><br>
+    <input type="url" id="compressedUrl" size="80" placeholder="Enter the URL of the ALREADY COMPRESSED Gimkit JSON file">
+    <button onclick="decompressFromCompressedUrl()">Decompress from URL</button><br><br>
 
     <label for="decompressedOutput">Decompressed JSON:</label><br>
     <textarea id="decompressedOutput" rows="15" cols="80" readonly></textarea>
 
     <p id="errorMessage" style="color: red;"></p>
 
-<script src="https://cdn.jsdelivr.net/npm/compress-json@3/bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/compress-json@3/bundle.min.js"></script>
     <script>
-        async function decompressGimkitFile() {
-            const filenameBase = document.getElementById('filename').value.trim();
+        async function decompressFromCompressedUrl() {
+            const compressedUrl = document.getElementById('compressedUrl').value.trim();
             const decompressedOutput = document.getElementById('decompressedOutput');
             const errorMessage = document.getElementById('errorMessage');
             const corsProxy = 'https://api.allorigins.win/raw?url=';
-            const baseUrl = 'https://www.gimkit.com/assets/map/characters/spine/';
-            const filenameWithExtension = filenameBase + '.json';
-            const jsonUrl = baseUrl + filenameWithExtension;
 
-            if (!filenameBase) {
-                errorMessage.textContent = 'Please enter the Gimkit filename (without .json).';
+            if (!compressedUrl) {
+                errorMessage.textContent = 'Please enter the URL of the compressed Gimkit JSON file.';
                 decompressedOutput.value = '';
                 return;
             }
 
             try {
-                const response = await fetch(corsProxy + jsonUrl);
+                const response = await fetch(corsProxy + compressedUrl);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                const originalJsonData = await response.json();
+                const fetchedData = await response.json(); // Assuming it's a JSON structure
 
-                const compressedData = compressJSON.compress(originalJsonData);
-                console.log("Compressed Data:", compressedData); // ADD THIS LINE
+                console.log("Fetched Data:", fetchedData); // Log the fetched data
 
-                const decompressedObject = compressJSON.decompress(compressedData);
+                const decompressedObject = compressJSON.decompress(fetchedData);
 
                 decompressedOutput.value = JSON.stringify(decompressedObject, null, 2);
                 errorMessage.textContent = '';
@@ -55,6 +51,17 @@
                 decompressedOutput.value = '';
             }
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const compressedUrlFromURL = urlParams.get('compressedUrl');
+            const compressedUrlInput = document.getElementById('compressedUrl');
+
+            if (compressedUrlFromURL) {
+                compressedUrlInput.value = decodeURIComponent(compressedUrlFromURL);
+                decompressFromCompressedUrl();
+            }
+        });
     </script>
 </body>
 </html>
