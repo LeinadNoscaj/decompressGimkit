@@ -3,15 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gimkit JSON Decompressor (Compressed URL)</title>
+    <title>Gimkit JSON Decompressor (Filename from URL)</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Gimkit JSON Decompressor (Provide Compressed JSON URL)</h1>
-
-    <label for="compressedUrl">URL of Compressed Gimkit JSON:</label><br>
-    <input type="url" id="compressedUrl" size="80" placeholder="Enter the URL of the ALREADY COMPRESSED Gimkit JSON file">
-    <button onclick="decompressFromCompressedUrl()">Decompress from URL</button><br><br>
+    <h1>Gimkit JSON Decompressor (Filename from URL)</h1>
 
     <label for="decompressedOutput">Decompressed JSON:</label><br>
     <textarea id="decompressedOutput" rows="15" cols="80" readonly></textarea>
@@ -20,26 +16,29 @@
 
     <script src="https://cdn.jsdelivr.net/npm/compress-json@3/bundle.min.js"></script>
     <script>
-        async function decompressFromCompressedUrl() {
-            const compressedUrl = document.getElementById('compressedUrl').value.trim();
+        const GIMKIT_ASSET_BASE_URL = 'https://www.gimkit.com/assets/map/characters/spine/';
+        const CORS_PROXY_URL = 'https://api.allorigins.win/raw?url=';
+
+        async function decompressGimkitAsset(filenameBase) {
             const decompressedOutput = document.getElementById('decompressedOutput');
             const errorMessage = document.getElementById('errorMessage');
-            const corsProxy = 'https://api.allorigins.win/raw?url=';
+            const filenameWithExtension = filenameBase + '.json';
+            const jsonUrl = GIMKIT_ASSET_BASE_URL + filenameWithExtension;
 
-            if (!compressedUrl) {
-                errorMessage.textContent = 'Please enter the URL of the compressed Gimkit JSON file.';
+            if (!filenameBase) {
+                errorMessage.textContent = 'Please provide a filename in the URL query.';
                 decompressedOutput.value = '';
                 return;
             }
 
             try {
-                const response = await fetch(corsProxy + compressedUrl);
+                const response = await fetch(CORS_PROXY_URL + jsonUrl);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                const fetchedData = await response.json(); // Assuming it's a JSON structure
+                const fetchedData = await response.json();
 
-                console.log("Fetched Data:", fetchedData); // Log the fetched data
+                console.log("Fetched Data:", fetchedData); // For debugging
 
                 const decompressedObject = compressJSON.decompress(fetchedData);
 
@@ -54,12 +53,10 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             const urlParams = new URLSearchParams(window.location.search);
-            const compressedUrlFromURL = urlParams.get('compressedUrl');
-            const compressedUrlInput = document.getElementById('compressedUrl');
+            const filenameFromURL = urlParams.get('filename');
 
-            if (compressedUrlFromURL) {
-                compressedUrlInput.value = decodeURIComponent(compressedUrlFromURL);
-                decompressFromCompressedUrl();
+            if (filenameFromURL) {
+                decompressGimkitAsset(decodeURIComponent(filenameFromURL));
             }
         });
     </script>
