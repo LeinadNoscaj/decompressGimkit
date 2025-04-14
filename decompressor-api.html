@@ -16,8 +16,7 @@
             const filenameBase = urlParams.get('filename');
 
             if (!filenameBase) {
-                // Output JSON error directly to the body
-                document.body.textContent = JSON.stringify({ error: 'No filename parameter provided.' });
+                document.write(JSON.stringify({ error: 'No filename parameter provided.' }));
                 return;
             }
 
@@ -27,24 +26,25 @@
             try {
                 const response = await fetch(CORS_PROXY_URL + jsonUrl);
                 if (!response.ok) {
-                    document.body.textContent = JSON.stringify({ error: `HTTP error! status: ${response.status}` });
+                    document.write(JSON.stringify({ error: `HTTP error! status: ${response.status}` }));
                     return;
                 }
                 const fetchedData = await response.json();
                 const decompressedObject = compressJSON.decompress(fetchedData);
                 const decompressedJsonString = JSON.stringify(decompressedObject);
 
-                // Output the raw JSON string as the body
-                document.body.textContent = decompressedJsonString;
-                document.body.style.contentType = 'application/json'; // Still a hope, but might not work
+                // Output the raw JSON string directly using document.write
+                document.write(decompressedJsonString);
+                document.body.style.contentType = 'application/json'; // Still trying
 
             } catch (error) {
-                document.body.textContent = JSON.stringify({ error: error.message });
+                document.write(JSON.stringify({ error: error.message }));
             }
         }
 
-        // Immediately execute the function
+        // Execute immediately
         decompressAndOutput();
     </script>
+    <noscript>Please enable JavaScript to view the decompressed JSON.</noscript>
 </body>
 </html>
