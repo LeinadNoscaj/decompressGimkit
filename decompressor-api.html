@@ -1,50 +1,36 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gimkit JSON Decompressor API</title>
-</head>
-<body>
-    <script src="https://cdn.jsdelivr.net/npm/compress-json@3/bundle.min.js"></script>
-    <script>
-        const GIMKIT_ASSET_BASE_URL = 'https://www.gimkit.com/assets/map/characters/spine/';
-        const CORS_PROXY_URL = 'https://api.allorigins.win/raw?url=';
+<script src="https://cdn.jsdelivr.net/npm/compress-json@3/bundle.min.js"></script>
+<script>
+    const GIMKIT_ASSET_BASE_URL = 'https://www.gimkit.com/assets/map/characters/spine/';
+    const CORS_PROXY_URL = 'https://api.allorigins.win/raw?url=';
 
-        async function decompressAndOutput() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const filenameBase = urlParams.get('filename');
+    async function decompressAndOutput() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const filenameBase = urlParams.get('filename');
 
-            if (!filenameBase) {
-                document.write(JSON.stringify({ error: 'No filename parameter provided.' }));
-                return;
-            }
-
-            const filenameWithExtension = filenameBase + '.json';
-            const jsonUrl = GIMKIT_ASSET_BASE_URL + filenameWithExtension;
-
-            try {
-                const response = await fetch(CORS_PROXY_URL + jsonUrl);
-                if (!response.ok) {
-                    document.write(JSON.stringify({ error: `HTTP error! status: ${response.status}` }));
-                    return;
-                }
-                const fetchedData = await response.json();
-                const decompressedObject = compressJSON.decompress(fetchedData);
-                const decompressedJsonString = JSON.stringify(decompressedObject);
-
-                // Output the raw JSON string directly using document.write
-                document.write(decompressedJsonString);
-                document.body.style.contentType = 'application/json'; // Still trying
-
-            } catch (error) {
-                document.write(JSON.stringify({ error: error.message }));
-            }
+        if (!filenameBase) {
+            document.body.textContent = JSON.stringify({ error: 'No filename parameter provided.' });
+            return;
         }
 
-        // Execute immediately
-        decompressAndOutput();
-    </script>
-    <noscript>Please enable JavaScript to view the decompressed JSON.</noscript>
-</body>
-</html>
+        const filenameWithExtension = filenameBase + '.json';
+        const jsonUrl = GIMKIT_ASSET_BASE_URL + filenameWithExtension;
+
+        try {
+            const response = await fetch(CORS_PROXY_URL + jsonUrl);
+            if (!response.ok) {
+                document.body.textContent = JSON.stringify({ error: `HTTP error! status: ${response.status}` });
+                return;
+            }
+            const fetchedData = await response.json();
+            const decompressedObject = compressJSON.decompress(fetchedData);
+            const decompressedJsonString = JSON.stringify(decompressedObject);
+
+            document.body.textContent = decompressedJsonString;
+
+        } catch (error) {
+            document.body.textContent = JSON.stringify({ error: error.message });
+        }
+    }
+
+    decompressAndOutput();
+</script>
