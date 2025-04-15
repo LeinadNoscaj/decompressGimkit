@@ -31,13 +31,14 @@
                     }
                     const compressedData = await response.json();
                     const spineJsonData = compressJSON.decompress(compressedData);
-                    console.log("Decompressed JSON for Spine Player:", spineJsonData); // Add this line for debugging
+                    console.log("Decompressed JSON for Spine Player:", spineJsonData); // DEBUG
 
                     const atlasResponse = await fetch(CORS_PROXY_URL + encodeURIComponent(GIMKIT_ASSET_BASE_URL + filename + '.atlas'));
                     if (!atlasResponse.ok) {
                         throw new Error(`Failed to fetch atlas: ${atlasResponse.status}`);
                     }
                     const atlasText = await atlasResponse.text();
+                    console.log("Atlas Text:", atlasText); // DEBUG
 
                     const pngResponse = await fetch(CORS_PROXY_URL + encodeURIComponent(GIMKIT_ASSET_BASE_URL + filename + '.png'));
                     if (!pngResponse.ok) {
@@ -50,16 +51,17 @@
                         reader.onerror = reject;
                         reader.readAsDataURL(pngBlob);
                     });
+                    console.log("PNG Data URL:", pngDataURL); // DEBUG
 
                     new spine.SpinePlayer('spine-player', {
                         json: spineJsonData,
                         atlas: atlasText,
-                        animation: 'animation', // Adjust if your animation has a different name
-                        skin: 'default',       // Adjust if your Spine project uses skins
+                        animation: 'animation', // VERY IMPORTANT: Check the decompressed JSON for the correct name
+                        skin: 'default',       // VERY IMPORTANT: Check the decompressed JSON for the correct name (or null)
                         premultipliedAlpha: true,
                         backgroundColor: '#00000000',
                         rawDataURIs: {
-                            [`${filename}.png`]: pngDataURL // Only if you need to embed the image
+                            [`${filename}.png`]: pngDataURL
                         }
                     });
 
