@@ -3,43 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gimkit Spine Animation Player (Debugging Decompression)</title>
+    <title>Gimkit Spine Animation Player</title>
+    <style>
+        body { margin: 0; }
+        canvas { width: 100%; height: 100%; display: block; }
+    </style>
+    <link href="https://unpkg.com/@esotericsoftware/spine-player@4.1/dist/spine-player.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/compress-json@3/bundle.min.js"></script>
 </head>
 <body>
-    <h1>Debugging Decompression</h1>
+    <div id="spine-player"></div>
+    <script src="https://unpkg.com/@esotericsoftware/spine-player@4.1/dist/iife/spine-player.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('spine-player');
             const GIMKIT_ASSET_BASE_URL = 'https://www.gimkit.com/assets/map/characters/spine/';
             const CORS_PROXY_URL = 'https://api.allorigins.win/raw?url=';
-            const filename = 'snowman'; // You can change this to another asset
 
-            async function fetchAndLogDecompressed(filename) {
+            async function loadSpineAnimation(filename) {
                 const jsonUrl = GIMKIT_ASSET_BASE_URL + filename + '.json';
                 const proxiedJsonUrl = CORS_PROXY_URL + encodeURIComponent(jsonUrl);
 
                 try {
                     const response = await fetch(proxiedJsonUrl);
                     if (!response.ok) {
-                        console.error(`Failed to fetch compressed JSON: ${response.status}`);
-                        return;
+                        throw new Error(`Failed to fetch compressed JSON: ${response.status}`);
                     }
                     const compressedData = await response.json();
-                    console.log("Fetched Compressed Data:", compressedData);
+                    const spineJsonData = compressJSON.decompress(compressedData);
 
-                    const decompressedData = compressJSON.decompress(compressedData);
-                    console.log("Decompressed Data:", decompressedData);
+                    const atlasResponse = await fetch(CORS_PROXY_URL + encodeURIComponent(GIMKIT_ASSET_BASE_URL + filename + '.atlas'));
+                    if (!atlasResponse.ok) {
+                        throw new Error(`Failed to fetch atlas: ${atlasResponse.status}`);
+                    }
+                    const atlasText = await atlasResponse.text();
 
-                    // Optionally, stringify and log again for better visibility
-                    const decompressedString = JSON.stringify(decompressedData, null, 2);
-                    console.log("Decompressed Data (Stringified):\n", decompressedString);
+                    const pngResponse = await fetch(CORS_PROXY_URL + encodeURIComponent(GIMKIT_ASSET_BASE_URL + filename + '.png'));
+                    if (!pngResponse.ok) {
+                        console.warn(`Failed to fetch PNG for ${filename}`);
+                    }
+                    const pngBlob = await pngResponse.blob();
+                    const reader = new FileReader();
+                    const pngDataURL = await new Promise((resolve, reject) => {
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(pngBlob);
+                    });
+
+                    new spine.SpinePlayer('spine-player', {
+                        json: spineJsonData,
+                        atlas: atlasText,
+                        animation: 'animation', // Adjust if your animation has a different name
+                        skin: 'default',       // Adjust if your Spine project uses skins
+                        premultipliedAlpha: true,
+                        backgroundColor: '#00000000',
+                        rawDataURIs: {
+                            [`${filename}.png`]: pngDataURL // Only if you need to embed the image
+                        }
+                    });
 
                 } catch (error) {
-                    console.error("Error during fetch or decompression:", error);
+                    console.error("Error loading Spine animation:", error);
                 }
             }
 
-            fetchAndLogDecompressed(filename);
+            document.addEventListener('DOMContentLoaded', () => {
+                const urlParams = new URLSearchParams(window.location.search);
+                const filenameFromURL = urlParams.get('filename');
+                const defaultFilename = 'snowman';
+
+                const filenameToLoad = filenameFromURL || defaultFilename;
+                loadSpineAnimation(decodeURIComponent(filenameToLoad));
+            });
         });
     </script>
 </body>
