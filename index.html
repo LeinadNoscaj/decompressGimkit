@@ -31,6 +31,7 @@
                     }
                     const compressedData = await response.json();
                     const spineJsonData = compressJSON.decompress(compressedData);
+                    console.log("Decompressed JSON for Spine Player:", spineJsonData); // Add this line for debugging
 
                     const atlasResponse = await fetch(CORS_PROXY_URL + encodeURIComponent(GIMKIT_ASSET_BASE_URL + filename + '.atlas'));
                     if (!atlasResponse.ok) {
@@ -53,7 +54,7 @@
                     new spine.SpinePlayer('spine-player', {
                         json: spineJsonData,
                         atlas: atlasText,
-                        animation: 'idle', // Adjust if your animation has a different name
+                        animation: 'animation', // Adjust if your animation has a different name
                         skin: 'default',       // Adjust if your Spine project uses skins
                         premultipliedAlpha: true,
                         backgroundColor: '#00000000',
